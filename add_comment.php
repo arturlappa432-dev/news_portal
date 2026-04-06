@@ -87,7 +87,6 @@ if ($action === 'edit') {
     exit;
 }
 
-
 // --- ДОБАВЛЕНИЕ КОММЕНТАРИЯ ---
 if ($action === 'add') {
     $news_id = (int)$_POST['news_id'];
