@@ -1,12 +1,17 @@
 <?php
 session_start();
 
-$pdo = new PDO("mysql:host=127.0.0.1;dbname=news_portal;charset=utf8mb4", "root", "", [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-]);
+$pdo = new PDO(
+    "mysql:host=127.0.0.1;dbname=news_portal;charset=utf8mb4",
+    "root",
+    "",
+    [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]
+);
 
 $error = '';
-$success = false; // Флаг успешной регистрации
+$success = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -14,42 +19,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
 
+    // ── БАЗОВЫЕ ПРОВЕРКИ ─────────────────────
     if (empty($username) || empty($email) || empty($password)) {
         $error = "Заполните все поля!";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    }
+    elseif (strlen($username) < 2) {
+        $error = "Имя пользователя должно быть минимум 2 символа!";
+    }
+    elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Некорректный email!";
-    } elseif (strlen($password) < 6) {
+    }
+    elseif (strlen($password) < 6) {
         $error = "Пароль должен быть минимум 6 символов!";
-    } else {
-        // Проверка email
+    }
+
+    // ── УЛУЧШЕННАЯ ПРОВЕРКА EMAIL ─────────────────────
+    else {
+
+        $parts = explode('@', $email);
+
+        if (count($parts) !== 2) {
+            $error = "Email должен содержать @ и домен!";
+        } else {
+
+            $emailName = $parts[0];
+            $emailDomain = $parts[1];
+
+            if (strlen($emailName) < 2) {
+                $error = "Имя до @ должно быть минимум 2 символа!";
+            }
+            elseif (strlen($emailDomain) < 3 || strpos($emailDomain, '.') === false) {
+                $error = "Некорректный домен email!";
+            }
+        }
+    }
+
+    // ── ПРОВЕРКА В БД ─────────────────────────
+    if (!$error) {
+
         $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
         $stmt->execute([$email]);
         if ($stmt->fetch()) {
             $error = "Пользователь с таким email уже существует!";
         }
 
-        // Проверка username
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
         $stmt->execute([$username]);
         if ($stmt->fetch()) {
             $error = "Имя пользователя уже занято!";
         }
+    }
 
-        if (!$error) {
-            $password_hash = password_hash($password, PASSWORD_DEFAULT);
-            $default_avatar = null;
+    // ── СОЗДАНИЕ АККАУНТА ─────────────────────
+    if (!$error) {
 
-            $stmt = $pdo->prepare("
-                INSERT INTO users (username, email, password_hash, avatar)
-                VALUES (?, ?, ?, ?)
-            ");
-            $stmt->execute([$username, $email, $password_hash, $default_avatar]);
+        $password_hash = password_hash($password, PASSWORD_DEFAULT);
+        $default_avatar = null;
 
-            $_SESSION['user_id'] = $pdo->lastInsertId();
-            $_SESSION['username'] = $username;
+        $stmt = $pdo->prepare("
+            INSERT INTO users (username, email, password_hash, avatar)
+            VALUES (?, ?, ?, ?)
+        ");
 
-            $success = true; // Устанавливаем успех вместо мгновенного редиректа
-        }
+        $stmt->execute([
+            $username,
+            $email,
+            $password_hash,
+            $default_avatar
+        ]);
+
+        $_SESSION['user_id'] = $pdo->lastInsertId();
+        $_SESSION['username'] = $username;
+
+        $success = true;
     }
 }
 ?>
@@ -71,10 +113,9 @@ body {
     overflow: hidden;
 }
 
-/* Стили для зеленой плашки */
 .success-banner {
     position: fixed;
-    top: -100px; /* Скрыта за верхним краем */
+    top: -100px;
     left: 0;
     width: 100%;
     background: #4caf50;
@@ -89,7 +130,7 @@ body {
 }
 
 .success-banner.show {
-    transform: translateY(100px); /* Выезжает вниз */
+    transform: translateY(100px);
 }
 
 .form-container {
@@ -186,12 +227,15 @@ button:hover {
         <div class="field">
             <input type="text" name="username" placeholder="Имя пользователя" required>
         </div>
+
         <div class="field">
             <input type="email" name="email" placeholder="Email" required>
         </div>
+
         <div class="field">
             <input type="password" name="password" placeholder="Пароль" required>
         </div>
+
         <button type="submit">Создать аккаунт</button>
     </form>
 
@@ -201,19 +245,16 @@ button:hover {
 </div>
 
 <script>
-// Если PHP установил $success в true, запускаем анимацию
 <?php if ($success): ?>
-    const banner = document.getElementById('successBanner');
-    
-    // 1. Показываем плашку
-    setTimeout(() => {
-        banner.classList.add('show');
-    }, 100);
+const banner = document.getElementById('successBanner');
 
-    // 2. Через 3 секунды перекидываем на главную
-    setTimeout(() => {
-        window.location.href = 'index.php';
-    }, 3000);
+setTimeout(() => {
+    banner.classList.add('show');
+}, 100);
+
+setTimeout(() => {
+    window.location.href = 'index.php';
+}, 3000);
 <?php endif; ?>
 </script>
 
