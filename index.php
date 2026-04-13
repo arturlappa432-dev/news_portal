@@ -1,4 +1,5 @@
 <?php
+$error_test = "No semicolon here" // Специально не ставим ;
 session_start();
 
 try {
