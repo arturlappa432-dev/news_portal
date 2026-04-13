@@ -23,20 +23,18 @@ jobs:
           if [ $? -eq 0 ]; then exit 1; fi
           echo 'All PHP files passed syntax check!'
 
-  phpcs:
+ phpcs:
     name: Code Style Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup PHP with PHPCS
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
           tools: phpcs
+
       - name: Run PHPCS
-        run: |
-          phpcs --standard=PSR12 --extensions=php \
-            --ignore=vendor/,node_modules/ \
-            --report=summary .
-          echo 'Code style check completed!'
+        run: phpcs
