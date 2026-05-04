@@ -1,3 +1,6 @@
+![Version](https://img.shields.io/badge/version-1.0.0-green) 
+Последний релиз: [v1.0.0](https://github.com/ВАШ_ЛОГИН/ВАШ_РЕПО/releases/tag/v1.0.0) 
+
 Описание
 
 Веб-приложение для публикации новостей и интересных фактов.
